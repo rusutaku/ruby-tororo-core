@@ -1,0 +1,7 @@
+# whitelist: for LotRO chat
+/^\[To Fellowship\] /
+/^\[Fellowship\] (.+?): /
+/^\[To Kinship\] /
+/^\[Kinship\] (.+?): /
+/^\[To [Jj][Pp]\] /
+/^\[[Jj][Pp]\] (.+?): /

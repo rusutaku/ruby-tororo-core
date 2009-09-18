@@ -1,0 +1,270 @@
+# romaji-kana : Romaji-Hiragana conversion table
+# $Id: romaji,v 1.5 2005/01/16 15:11:22 komatsu Exp $
+#
+# Copyright (C) 2002 Hiroyuki Komatsu <komatsu@taiyaki.org>
+#     All rights reserved.
+#     This is free software with ABSOLUTELY NO WARRANTY.
+#
+# You can redistribute it and/or modify it under the terms of 
+# the GNU General Public License version 2.
+#
+-	ー
+~	～
+va	う゛ぁ
+vi	う゛ぃ
+vu	う゛
+ve	う゛ぇ
+vo	う゛ぉ
+vv	っ	v
+xx	っ	x
+kk	っ	k
+gg	っ	g
+ss	っ	s
+zz	っ	z
+jj	っ	j
+tt	っ	t
+dd	っ	d
+hh	っ	h
+ff	っ	f
+bb	っ	b
+pp	っ	p
+mm	っ	m
+yy	っ	y
+rr	っ	r
+ww	っ	w
+cc	っ	c
+kya	きゃ
+kyi	きぃ
+kyu	きゅ
+kye	きぇ
+kyo	きょ
+gya	ぎゃ
+gyi	ぎぃ
+gyu	ぎゅ
+gye	ぎぇ
+gyo	ぎょ
+sya	しゃ
+syi	しぃ
+syu	しゅ
+sye	しぇ
+syo	しょ
+sha	しゃ
+shi	し
+shu	しゅ
+she	しぇ
+sho	しょ
+zya	じゃ
+zyi	じぃ
+zyu	じゅ
+zye	じぇ
+zyo	じょ
+tya	ちゃ
+tyi	ちぃ
+tyu	ちゅ
+tye	ちぇ
+tyo	ちょ
+cha	ちゃ
+chi	ち
+chu	ちゅ
+che	ちぇ
+cho	ちょ
+cya	ちゃ
+cyi	ちぃ
+cyu	ちゅ
+cye	ちぇ
+cyo	ちょ
+dya	ぢゃ
+dyi	ぢぃ
+dyu	ぢゅ
+dye	ぢぇ
+dyo	ぢょ
+tha	てゃ
+thi	てぃ
+thu	てゅ
+the	てぇ
+tho	てょ
+dha	でゃ
+dhi	でぃ
+dhu	でゅ
+dhe	でぇ
+dho	でょ
+twa	とぁ
+twi	とぃ
+twu	とぅ
+twe	とぇ
+two	とぉ
+dwa	どぁ
+dwi	どぃ
+dwu	どぅ
+dwe	どぇ
+dwo	どぉ
+nya	にゃ
+nyi	にぃ
+nyu	にゅ
+nye	にぇ
+nyo	にょ
+hya	ひゃ
+hyi	ひぃ
+hyu	ひゅ
+hye	ひぇ
+hyo	ひょ
+bya	びゃ
+byi	びぃ
+byu	びゅ
+bye	びぇ
+byo	びょ
+pya	ぴゃ
+pyi	ぴぃ
+pyu	ぴゅ
+pye	ぴぇ
+pyo	ぴょ
+fa	ふぁ
+fi	ふぃ
+fu	ふ
+fe	ふぇ
+fo	ふぉ
+mya	みゃ
+myi	みぃ
+myu	みゅ
+mye	みぇ
+myo	みょ
+rya	りゃ
+ryi	りぃ
+ryu	りゅ
+rye	りぇ
+ryo	りょ
+n'	ん
+nn	ん
+n	ん
+#nb	ん	b
+#nc	ん	c
+#nd	ん	d
+#nf	ん	f
+#ng	ん	g
+#nh	ん	h
+#nj	ん	j
+#nk	ん	k
+#nl	ん	l
+#nm	ん	m
+#np	ん	p
+#nq	ん	q
+#nr	ん	r
+#ns	ん	s
+#nt	ん	t
+#nu	ん	u
+#nv	ん	v
+#nw	ん	w
+#nx	ん	x
+#nz	ん	z
+a	あ
+i	い
+u	う
+e	え
+o	お
+xa	ぁ
+xi	ぃ
+xu	ぅ
+xe	ぇ
+xo	ぉ
+a	あ
+i	い
+u	う
+e	え
+o	お
+la	ぁ
+li	ぃ
+lu	ぅ
+le	ぇ
+lo	ぉ
+ka	か
+ki	き
+ku	く
+ke	け
+ko	こ
+ga	が
+gi	ぎ
+gu	ぐ
+ge	げ
+go	ご
+sa	さ
+si	し
+su	す
+se	せ
+so	そ
+za	ざ
+zi	じ
+zu	ず
+ze	ぜ
+zo	ぞ
+ja	じゃ
+ji	じ
+ju	じゅ
+je	じぇ
+jo	じょ
+jya	じゃ
+jyu	じゅ
+jye	じぇ
+jyo	じょ
+ta	た
+ti	ち
+tu	つ
+tsu	つ
+te	て
+to	と
+da	だ
+di	ぢ
+du	づ
+de	で
+do	ど
+xtu	っ
+xtsu	っ
+na	な
+ni	に
+nu	ぬ
+ne	ね
+no	の
+ha	は
+hi	ひ
+hu	ふ
+fu	ふ
+he	へ
+ho	ほ
+ba	ば
+bi	び
+bu	ぶ
+be	べ
+bo	ぼ
+pa	ぱ
+pi	ぴ
+pu	ぷ
+pe	ぺ
+po	ぽ
+ma	ま
+mi	み
+mu	む
+me	め
+mo	も
+xya	ゃ
+ya	や
+xyu	ゅ
+yu	ゆ
+xyo	ょ
+yo	よ
+ra	ら
+ri	り
+ru	る
+re	れ
+ro	ろ
+xwa	ゎ
+wa	わ
+wi	うぃ
+we	うぇ
+wo	を
+wha	うぁ
+whi	うぃ
+whe	うぇ
+who	うぉ
+wyi	ゐ
+wye	ゑ
+#[	「
+#]	」
