@@ -1,0 +1,34 @@
+# 入力方式テーブルのディレクトリ
+input_tables_dir:    ./conv-table
+
+# デフォルトの入力方式テーブル
+default_input_table: romaji
+
+# 自分の入力方式テーブル指定
+your_input_table:    romaji
+
+# 新キャラクタを感知したら更新するファイル
+character_id_table_output: ./rule/characters
+
+### 以下は複数ファイルを指定可能
+
+# キャラクタの同定テーブルリスト
+# 今はキャラクター名と入力方式情報のみ
+character_id_tables:
+  - ./rule/characters
+
+# 行ごとのホワイトリストテーブルリスト（ややこしい）
+line_whitelist_tables:
+  - ./rule/whitelist
+
+# 外国語変換辞書リスト
+foreign_lang_dics:
+  - ./dic/foreign
+
+# 変換しない単語テーブルリスト
+word_blacklist_tables:
+  - ./dic/denywords
+
+# ひらがなから漢字かなカナ変換する辞書リスト
+hiragana_to_kanjikana_dics:
+  - ./dic/nippon

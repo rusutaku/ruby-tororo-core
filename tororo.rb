@@ -1,43 +1,51 @@
 # coding: UTF-8
-# tororo pre alpha
+# tororo alpha4
 $KCODE = 'utf8'
 
 require 'find'
+require 'yaml'
 require 'suikyo/suikyo'
 
 class Tororo
   def initialize
-    # ここらへんはconfigファイルを読んで各種ファイル名を取得したい
-    DEFAULT_TYPE = "romaji"
-    YOUR_TYPE = "romaji"
-    @to_hira = Hash.new
-    Find.find("./conv-table") {|path|
-      if File.file?(path) then
-        filename = File.basename(path)
-        @to_hira[filename] = Suikyo.new
-        @to_hira[filename].table.loadfile(filename)
-      end
-    }
-    @foreign = Suikyo.new
-    @foreign.table.loadfile("foreign","./dic")
-    @nippon = Suikyo.new
-    @nippon.table.loadfile("nippon","./dic")
-    @denial = SimpleTable.new
-    @denial.loadfile("!denial!", "./dic") # 変換拒否単語リスト
-    @players = SimpleTable.new("./rule/players") # 更新用の出力ファイルの指定が必要
-    @players.loadfile("players", "./rule")
-    @white = AllowList.new
-    @white.loadfile("whitelist", "./rule")
-
-    #@log_path_input = log_path_input
-    #@log_path_output = "./log/" + File::basename(log_path_input)
     @log_path_in = ""
-    #@log_path_out = "./log/" + File::basename(log_path_input)
+    # @log_path_out = "./log/" + File::basename(log_path_input)
     @log_lines = []
     @log_line_num = 0 # すでに変換した行数
     @log_mtime = 0
+    load_config
   end
-  
+
+  def load_config
+    config = YAML.load_file("config.yaml")
+    @default_input_table = config["default_input_table"]
+    @your_input_table    = config["your_input_table"]
+    @input_tables = Hash.new
+    Find.find(config["input_tables_dir"]) {|pathname|
+      if File.file?(pathname) then
+        filename = File.basename(pathname)
+        @input_tables[filename] = Suikyo.new
+        @input_tables[filename].table.loadfile(filename)
+      end
+    }
+    @charas  = build_table(CharacterID, config["character_id_tables"])
+    @charas.output_file = config["character_id_table_output"]
+    @line_allower = build_table(LineAllower, config["line_whitelist_tables"])
+    @foreign = build_table(Suikyo, config["foreign_lang_dics"])
+    @nippon  = build_table(Suikyo, config["hiragana_to_kanjikana_dics"])
+    @word_denier  = build_table(WordDenier, config["word_blacklist_tables"])
+  end
+
+  # 複数のテーブルファイルを一つのテーブルデータに集める
+  def build_table(target_class, file_list)
+    target = target_class.new
+    file_list.each {|pathname|
+      (dirname, filename) = File.split(pathname)
+      target.table.loadfile(filename, dirname)
+    }
+    return target
+  end
+
   def conv_from_log(filepath)
     @log_path_in = filepath
     @log_line_num = 0
@@ -66,34 +74,38 @@ class Tororo
     # ASCII-8bit 以外の文字があったらそのまま返す
     # ここは Ruby 1.9 だとエラーになる /[^\u0000-\x00FF]/ だといい？
     return str if /[^\x00-\xFF]/ =~ str
-    # ホワイトリストに載っていれば変換
-    if pos = @white.apply_filter(str) then
-      # プレイヤー名から入力方式を取得
-      if player_name = @white.get_playername(str) then
-        if @players.exist?(player_name) then
-          type = @players.get_param(player_name)
-        else
-          type = DEFAULT_TYPE
-          @players.set(player_name, type, true)
+    # フィルターで許可されていれば変換
+    if @line_allower.apply_filter(str) then
+      # フィルター結果からキャラクター名を取得
+      if chara_name = @line_allower.get_character_name then
+        # キャラクター名から入力方式を取得
+        # キャラクター ID テーブルに存在しなかったら規定値の入力方式にする
+        unless type = @charas.get_input_type(chara_name) then
+          type = @default_input_table
+          @charas.table.set(chara_name, type)
+          @charas.update_file(chara_name, type)
         end
-      # プレイヤー名が見つからなかったら自分の発言と判断する
+      # フィルター結果からキャラクター名を取得できなければ自分の発言と判断
       else
-        type = YOUR_TYPE
+        type = @your_input_table
       end
-      return str unless @to_hira.include?(type) # 入力方式が存在しない場合はそのまま返す
+      return str unless @input_tables.include?(type) # 入力方式が存在しない場合はそのまま返す
       # 無変換部分と変換部分に分ける
+      pos = @line_allower.get_convert_start_position
       no_convstr = str[0...pos]
       convstr    = str[pos...str.length]
       str = no_convstr
-      convstr = conv_foreign(convstr)
+      convstr = @foreign.convert(convstr)
       i = 0
       setoff(convstr).each {|words| # [括弧外,括弧内,括弧外,括弧内,...]
-        if i % 2  == 0 then # 偶数は[]括弧外で変換対象 奇数は[]括弧内で無変換
-          divide_by_blank(words).each {|word| # 変換対象を変換
+        # 偶数は[]括弧外で変換対象 奇数は[]括弧内で無変換
+        if i % 2  == 0 then
+          # スペースで区切って変換させる
+          divide_by_blank(words).each {|word|
             word += " "
-            unless @denial.exist?(word.chop) then # 変換拒否単語か？
-              if @to_hira[type].valid?(word) then
-                str += @nippon.convert(@to_hira[type].convert(word))
+            unless @word_denier.deny?(word.chop) then # 変換拒否単語か？
+              if @input_tables[type].valid?(word) then
+                str += @nippon.convert(@input_tables[type].convert(word))
               else
                 str += word
               end
@@ -101,20 +113,17 @@ class Tororo
               str += word
             end
           }
+        # 無変換部分（[]内）
         else
           str += words + " "
         end
         i += 1
       }
       # strip でスペースを抜こうとすると文末の「だ」が1バイト削られちゃう
-      #return str.strip
+      # return str.strip
       str.chop!
     end
     return str
-  end
-
-  def conv_foreign(str)
-    return @foreign.convert(str)
   end
 
   # 括弧外文字列と括弧内文字列で分割した配列を返す
@@ -149,26 +158,58 @@ class Tororo
   end
 
   def read_log_all
-    open(@log_path_in, "r") do |f|
+    open(@log_path_in, "r") {|f|
       @log_lines = f.readlines
       @log_mtime = f.mtime
-    end
+    }
   end
   
   def log_changed?
-    open(@log_path_in, "r") do |f|
+    open(@log_path_in, "r") {|f|
       return (f.mtime > @log_mtime)
-    end
+    }
   end
-
-
 end
 
+# キャラクタ同定
+# 今は入力方式のみ
+class CharacterID
+  attr_reader :table
+  attr_writer :output_file
+  def initialize
+    @table = SimpleTable.new
+    @output_file = ""
+  end
+  
+  def update_file(chara_name, input_type)
+    @table.set(chara_name, input_type)
+    open(@output_file, "a") {|f|
+      f.write(chara_name + "\t" + input_type + "\n")
+    }
+  end
+
+  def get_input_type(chara_name)
+    return @table.get_param(chara_name)
+  end
+end
+
+# 変換しない単語
+class WordDenier
+  attr_reader :table
+  def initialize
+    @table = SimpleTable.new
+  end
+
+  def deny?(word)
+    return @table.exist?(word)
+  end
+end
+
+# 1つの値を持つハッシュのテーブル
 class SimpleTable
-  def initialize(output_file = "")
+  def initialize
     @word = Hash.new
     @list_files = []
-    @output_file = output_file
   end
 
   def loadfile (filename, tablepath = nil)
@@ -176,7 +217,7 @@ class SimpleTable
     if FileTest::exist?(filepath) then
       @list_files.push(filepath)
     else
-      $stderr.puts "tororo.rb: '#{filepath}' is not found."
+      $stderr.puts "tororo.rb: SimpleTable '#{filepath}' is not found."
       return false
     end
     open(filepath, "r").readlines.each {|line|
@@ -192,18 +233,12 @@ class SimpleTable
     return true
   end
 
-  def update_file(key)
-    open(@output_file, "a") {|f|
-      # f.flock(File::LOCK_EX | File::LOCK_NB)
-      f.write(key + "\t" + @word[key] + "\n")
-    }
+  def set(key, param)
+    @word[key] = param
   end
 
-  def set(key, param, update = false)
-    @word[key] = param
-    if update then
-      update_file(key)
-    end
+  def unset(key)
+    @word.delete(key)
   end
   
   def exist?(key)
@@ -213,20 +248,41 @@ class SimpleTable
   def get_param(key)
     return @word[key]
   end
-
 end
 
-# 変換許可
-class AllowList
-  attr_reader :list_files
-  
+# 行ごとの変換許可（正規表現）
+class LineAllower
+  attr_reader :table
+  def initialize
+    @table = FilterTable.new
+    @match_data = MatchData
+  end
+
+  def apply_filter(str)
+    @match_data = @table.try_match(str)
+  end
+
+  # 1番目にマッチした部分文字列はキャラクタ名
+  def get_character_name
+    return nil unless @match_data
+    return @match_data[1]
+  end
+  # 変換対象文字列の開始位置を取得
+  # とりあえずマッチした文字列の終端を開始位置とする
+  def get_convert_start_position
+    return nil unless @match_data
+    return @match_data.end(0)
+  end
+end
+
+# 正規表現のフィルターテーブル
+class FilterTable
+  attr_reader :table_files
   def initialize
     @word = []
-    @list_files = []
-    @mached_regexp = nil
+    @table_files = []
   end
   
-  # 今のところは正規表現だけサポート
   def set(str)
     if /^\/(.*)\/$/ =~ str then
       @word.push(Regexp.new($1))
@@ -242,9 +298,9 @@ class AllowList
   def loadfile (filename, tablepath = nil)
     filepath = File::join2(tablepath, filename)
     if FileTest::exist?(filepath) then
-      @list_files.push(filepath)
+      @table_files.push(filepath)
     else
-      $stderr.puts "tororo.rb: whitelist '#{filepath}' is not found."
+      $stderr.puts "tororo.rb: FilterTable '#{filepath}' is not found."
       return false
     end
     open(filepath, "r").readlines.each{|line|
@@ -255,37 +311,17 @@ class AllowList
     }
     return true
   end
-
   
-  def apply_filter(str)
-    @mached_regexp = nil
+  def try_match(str)
     allword.each {|regexp|
       if regexp =~ str then
-        @mached_regexp = regexp
-        return $~.end(0)
+        return Regexp.last_match
       end
     }
-    return nil
-  end
-
-# 変換対象文字列の開始位置を取得
-# とりあえずマッチした文字列の終端を開始位置とする
-  def get_startposition(str)
-    if @mached_regexp =~ str then
-      return $~.end(0)
-    end
-    return nil
-  end
-
-  def get_playername(str)
-    if @mached_regexp =~ str then
-      return $1
-    end
     return nil
   end
 
   def allword
     return @word
   end
-  
 end
