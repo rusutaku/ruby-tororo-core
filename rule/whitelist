@@ -5,3 +5,7 @@
 /^\[Kinship\] (.+?): /
 /^\[To [Jj][Pp]\] /
 /^\[[Jj][Pp]\] (.+?): /
+/^\[To Raid\] /
+/^\[Raid\] (.+?): /
+/^You tell (.+?), /
+/^(.+?) tells you, /
