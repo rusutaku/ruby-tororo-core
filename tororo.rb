@@ -18,29 +18,31 @@ class Tororo
 
   def load_config
     config = YAML.load_file("config.yaml")
+    
     @default_input_table = config["default_input_table"]
     @your_input_table    = config["your_input_table"]
     @input_tables = Hash.new
     Find.find(config["input_tables_dir"]) {|pathname|
       if File.file?(pathname) then
         filename = File.basename(pathname)
-        @input_tables[filename] = Suikyo.new
+        @input_tables[filename] = TororoSuikyo.new
         @input_tables[filename].table.loadfile(filename)
       end
     }
-    @charas  = build_table(CharacterID, config["character_id_tables"])
+    @charas       = build_table(CharacterID,  config["character_id_tables"])
+    @line_allower = build_table(LineAllower,  config["line_whitelist_tables"])
+    @foreign_lang = build_table(TororoSuikyo, config["foreign_lang_dics"])
+    @nippon       = build_table(TororoSuikyo, config["hiragana_to_kanjikana_dics"])
+    @word_denier  = build_table(WordDenier,  config["word_blacklist_tables"])
     @charas.output_file = config["character_id_table_output"]
-    @line_allower = build_table(LineAllower, config["line_whitelist_tables"])
-    @foreign = build_table(Suikyo, config["foreign_lang_dics"])
-    @nippon  = build_table(Suikyo, config["hiragana_to_kanjikana_dics"])
-    @word_denier  = build_table(WordDenier, config["word_blacklist_tables"])
+    @quote_foreign_lang = config["quote_foreign_lang"] ? true : false
   end
 
   # 複数のテーブルファイルを一つのテーブルデータに集める
   def build_table(target_class, file_list)
     target = target_class.new
     file_list.each {|pathname|
-      (dirname, filename) = File.split(pathname)
+      dirname, filename = File.split(pathname)
       target.table.loadfile(filename, dirname)
     }
     return target
@@ -95,7 +97,8 @@ class Tororo
       no_convstr = str[0...pos]
       convstr    = str[pos...str.length]
       str = no_convstr
-      convstr = @foreign.convert(convstr)
+      convstr = @foreign_lang.convert( \
+        convstr, @foreign_lang.table,false, @quote_foreign_lang)
       i = 0
       setoff(convstr).each {|words| # [括弧外,括弧内,括弧外,括弧内,...]
         # 偶数は[]括弧外で変換対象 奇数は[]括弧内で無変換
@@ -197,7 +200,7 @@ end
 class WordDenier
   attr_reader :table
   def initialize
-    @table = SimpleTable.new
+    @table = IgnoreCasingTable.new("cs")
   end
 
   def deny?(word)
@@ -223,13 +226,12 @@ class SimpleTable
     open(filepath, "r").readlines.each {|line|
       line.chomp!
       unless line =~ /^\#|^\s*$/ then
-        (key, param) = line.sub(/^ /, "").split(/\t/,2)
+        key, param = line.sub(/^ /, "").split(/\t/)
          # キーのみ（タブ文字以降のデータなし）の場合は存在だけを知らせる
         param = true unless param
-        @word[key] = param
+        set(key, param)
       end
     }
-    
     return true
   end
 
@@ -247,6 +249,51 @@ class SimpleTable
 
   def get_param(key)
     return @word[key]
+  end
+end
+
+# 大文字小文字を区別しないテーブル
+# パラメータが case_sensitive_param の場合は区別
+class IgnoreCasingTable < SimpleTable
+  def initialize(case_sensitive_param = nil)
+    @word = Hash.new
+    @case_sensitive_param = case_sensitive_param
+    @list_files = []
+  end
+
+  def loadfile (filename, tablepath = nil)
+    filepath = File::join2(tablepath, filename)
+    if FileTest::exist?(filepath) then
+      @list_files.push(filepath)
+    else
+      $stderr.puts "tororo.rb: IgnoreCasingTable '#{filepath}' is not found."
+      return false
+    end
+    open(filepath, "r").readlines.each {|line|
+      line.chomp!
+      unless line =~ /^\#|^\s*$/ then
+        key, param = line.sub(/^ /, "").split(/\t/)
+        # キーのみ（タブ文字以降のデータなし）の場合は存在だけを知らせる
+        param = true unless param
+        # 大文字小文字の区別なしの単語は小文字のキーにする
+        key.downcase! unless @case_sensitive_param == param
+        set(key, param)
+      end
+    }
+    return true
+  end
+
+  def exist?(key)
+    # 大文字小文字の区別なしのキーは小文字に変換してあるので，
+    # 区別の判定が必要になるのは最初の if で弾かれたときだけ
+    if @word.include?(key) then
+      return true
+    elsif @word.include?(key.downcase) and \
+          @word[key.downcase] != @case_sensitive_param then
+      return true
+    else
+      return false
+    end
   end
 end
 

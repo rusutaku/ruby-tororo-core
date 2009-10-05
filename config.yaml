@@ -25,6 +25,9 @@ line_whitelist_tables:
 foreign_lang_dics:
   - ./dic/foreign
 
+# 外国語変換時に原語を括弧書きで付け足す？ 省略時は false
+quote_foreign_lang: false
+
 # 変換しない単語テーブルリスト
 word_blacklist_tables:
   - ./dic/denywords

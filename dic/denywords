@@ -1,24 +1,17 @@
+# parameter "cs": case-sensitive
 morale
-Morale
 name
 'hi'
 'hi!'
 aoe
-AOE
-AoE
 bio
-Bio
-BIO
 chanse
 damage
 emote
-Etten
 etten
-Fate
 fate
 fire
-Fire
-Foundation
+foundation
 hate
 leave
 line
@@ -26,13 +19,11 @@ main
 mode
 mouse
 move
-MOVE
-Move
 movie
 native
 radeon
 share
 summon
 solo
-Vile
 vile
+IME	cs

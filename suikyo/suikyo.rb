@@ -7,7 +7,7 @@
 #     This is free software with ABSOLUTELY NO WARRANTY.
 #
 # Modified by rusutaku
-# v 1.19-1 2009/09/11
+# v 1.19-2 2009/09/29
 #
 # You can redistribute it and/or modify it under the terms of 
 # the GNU General Public License version 2.
@@ -42,8 +42,8 @@ class Suikyo
     end
   end
 
-  def convert (string, table = @table, trim = false)
-    (conversion, pending, last_node) = convert_internal(string, table, trim)
+  def convert (string, table = @table)
+    (conversion, pending, last_node) = convert_internal(string, table)
     return conversion + pending
   end
 
@@ -61,7 +61,7 @@ class Suikyo
     return [conversion + pending, conversions]
   end
 
-  def convert_internal (string, table = @table, trim = false)
+  def convert_internal (string, table = @table)
     chars = string.split(//)
     orig_table = table
     conversion = ""
@@ -76,8 +76,7 @@ class Suikyo
         tmp_node = table.get_word(head)
         table = (tmp_node and tmp_node.subtable)
         if tmp_node or pending == "" then
-          #pending += head unless head == " "
-          pending += head unless (head == " " and trim == true)
+          pending += head unless head == " "
           node = tmp_node
           chars.shift
         end
@@ -156,6 +155,60 @@ class Suikyo
   end
 end
 
+class TororoSuikyo < Suikyo
+  def convert (string, table = @table, trim = false, quote = false)
+    (conversion, pending, last_node) = convert_internal(string, table, trim, quote)
+    return conversion + pending
+  end
+  
+  def convert_internal (string, table = @table, trim = false, quote = false)
+    chars = string.split(//)
+    orig_table = table
+    conversion = ""
+
+    loop {
+      quote_str = ""
+      pending = ""
+      table   = orig_table
+      node    = nil
+
+      while table and chars.length > 0 do
+        head = chars[0]
+        tmp_node = table.get_word(head)
+        table = (tmp_node and tmp_node.subtable)
+        if tmp_node or pending == "" then
+          pending += head unless (head == " " and trim == true)
+          node = tmp_node
+          quote_str += chars.shift
+        end
+      end
+
+      if table.nil? and node and (node.result or node.cont) then
+        pending = ""
+        if node.result then
+          conversion += node.result
+          if quote then
+            conversion += "[_" + quote_str + "_]"
+          end
+        end
+        if node.cont then
+          chars.unshift(node.cont)
+        end
+      end
+
+      if chars.length == 0 then
+        if table.nil? then
+          return [conversion + pending, "", nil]
+        else
+          return [conversion, pending, node]
+        end
+      else
+        conversion += pending
+      end
+    }
+  end
+end
+
 class SuikyoTable
   attr_reader :table_files
 
@@ -224,7 +277,7 @@ class SuikyoTable
     end
 
     comment_flag = false
-    open(filepath, "r+").readlines.each{|line|
+    open(filepath, "r").readlines.each{|line|
       line.chomp!
       ## The function 'toeuc' converts half-width Katakana to full-width.
 #      line = line.toeuc.chomp
