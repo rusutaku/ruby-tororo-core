@@ -1,5 +1,4 @@
 # coding: UTF-8
-# tororo alpha4
 $KCODE = 'utf8'
 
 require 'find'
@@ -7,7 +6,9 @@ require 'yaml'
 require 'suikyo/suikyo'
 
 class Tororo
+  attr_reader :version
   def initialize
+    @version = "0.0.1"
     @log_path_in = ""
     # @log_path_out = "./log/" + File::basename(log_path_input)
     @log_lines = []
