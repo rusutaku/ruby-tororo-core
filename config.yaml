@@ -27,7 +27,7 @@ foreign_lang_dics:
   - ./dic/locations
 
 # 外国語変換時に原語を括弧書きで付け足す？ 省略時は false
-quote_foreign_lang: false
+quote_foreign_lang: true
 
 # 変換しない単語テーブルリスト
 word_blacklist_tables:
