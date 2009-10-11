@@ -7,7 +7,6 @@
 #     This is free software with ABSOLUTELY NO WARRANTY.
 #
 # Modified by rusutaku
-# v 1.19-2 2009/09/29
 #
 # You can redistribute it and/or modify it under the terms of 
 # the GNU General Public License version 2.
@@ -156,42 +155,81 @@ class Suikyo
 end
 
 class TororoSuikyo < Suikyo
-  def convert (string, table = @table, trim = false, quote = false)
-    (conversion, pending, last_node) = convert_internal(string, table, trim, quote)
+  attr_accessor :punctuation_marks
+
+  def convert (string, table = @table, \
+      strict = false, quote = false , trim = false)
+    (conversion, pending, last_node) = convert_internal(string, table, strict, quote, trim)
     return conversion + pending
   end
-  
-  def convert_internal (string, table = @table, trim = false, quote = false)
+
+  def convert_internal (string, table = @table, \
+      strict = false, quote = false, trim = false)
     chars = string.split(//)
     orig_table = table
     conversion = ""
+    head_bordered = true
+    head = ""
 
     loop {
-      quote_str = ""
+      orig_str = ""
       pending = ""
       table   = orig_table
       node    = nil
+      last_node = nil
+      candidate = ""
 
       while table and chars.length > 0 do
         head = chars[0]
         tmp_node = table.get_word(head)
         table = (tmp_node and tmp_node.subtable)
         if tmp_node or pending == "" then
-          pending += head unless (head == " " and trim == true)
+          unless head == " " and trim == true then
+            pending += head
+          end
           node = tmp_node
-          quote_str += chars.shift
+          orig_str += chars.shift
+          if node and node.result then
+            last_node = node
+            # 候補が外れた時用の書き戻しを保存
+            candidate = chars.join
+          end
         end
       end
 
-      if table.nil? and node and (node.result or node.cont) then
+      if ( table.nil? and
+        (node and (node.result or node.cont)) or
+        (last_node and (last_node.result or last_node.cont)) ) then
         pending = ""
-        if node.result then
-          conversion += node.result
-          if quote then
-            conversion += "[_" + quote_str + "_]"
+        if node.result or last_node.result then
+          if node.result then
+            result = node.result
+          else
+            result = last_node.result
+          end
+          # strict: 語の途中で変換しない
+          # i.e. hobbit -> ホビット: hobbiton -> ホビットon
+          #      のように変換対象の前後ともに区切り文字で分かれていない場合．
+          if strict then
+            if chars.length > 0 then
+              tail_bordered = punctuation?(candidate[0..0])
+            # 変換対象が空の場合は後ろが区切られている
+            else
+              tail_bordered = true
+            end
+            # 前後を区切られている？
+            if head_bordered and tail_bordered then
+              conversion += converted_result(result, orig_str, quote)
+              # 探索した候補を書き戻す
+              chars = candidate.split(//) if last_node and last_node.result
+            else
+              conversion += orig_str
+            end
+          else
+            conversion += converted_result(result, orig_str, quote)
           end
         end
-        if node.cont then
+        if node.cont or last_node.cont then
           chars.unshift(node.cont)
         end
       end
@@ -205,8 +243,34 @@ class TororoSuikyo < Suikyo
       else
         conversion += pending
       end
+
+      if punctuation?(head) then
+        head_bordered = true
+      else
+        head_bordered = false
+      end
     }
+
   end
+
+  def converted_result(result_string, original_string, quote)
+    if quote then
+      return result_string + "[_" + original_string + "_]"
+    else
+      return result_string
+    end
+  end
+
+  # 区切り文字の判定
+  def punctuation?(char)
+    return true if char == ""
+    if punctuation_marks =~ char then
+      return true
+    else
+      return false
+    end
+  end
+
 end
 
 class SuikyoTable
