@@ -1,5 +1,4 @@
 # coding: UTF-8
-# tororo alpha4
 $KCODE = 'utf8'
 
 require 'find'
@@ -7,11 +6,12 @@ require 'yaml'
 require 'suikyo/suikyo'
 
 class Tororo
+  attr_reader :version
   def initialize
+    @version = "0.1.1"
     @log_path_in = ""
-    # @log_path_out = "./log/" + File::basename(log_path_input)
     @log_lines = []
-    @log_line_num = 0 # すでに変換した行数
+    @count = 0 # すでに変換した行数
     @log_mtime = 0
     load_config
   end
@@ -36,6 +36,7 @@ class Tororo
     @word_denier  = build_table(WordDenier,  config["word_blacklist_tables"])
     @charas.output_file = config["character_id_table_output"]
     @quote_foreign_lang = config["quote_foreign_lang"] ? true : false
+    @foreign_lang.punctuation_marks = config["punctuation_marks"]
   end
 
   # 複数のテーブルファイルを一つのテーブルデータに集める
@@ -50,12 +51,13 @@ class Tororo
 
   def conv_from_log(filepath)
     @log_path_in = filepath
-    @log_line_num = 0
+    @count = 0
     read_log_all
     str = ""
     @log_lines.each {|line|
+      line.chomp!
       str += conv(line) + "\r\n"
-      @log_line_num += 1
+      @count += 1
     }
     return str
   end
@@ -64,10 +66,11 @@ class Tororo
     str = "";
     return str  unless log_changed?
     read_log_all
-    return str if @log_line_num > @log_lines.length
-    @log_lines[@log_line_num..-1].each {|line|
+    return str if @count > @log_lines.length
+    @log_lines[@count..-1].each {|line|
+      line.chomp!
       str += conv(line) + "\r\n"
-      @log_line_num += 1
+      @count += 1
     }
     return str
   end
@@ -98,7 +101,7 @@ class Tororo
       convstr    = str[pos...str.length]
       str = no_convstr
       convstr = @foreign_lang.convert( \
-        convstr, @foreign_lang.table,false, @quote_foreign_lang)
+        convstr, @foreign_lang.table, true, @quote_foreign_lang)
       i = 0
       setoff(convstr).each {|words| # [括弧外,括弧内,括弧外,括弧内,...]
         # 偶数は[]括弧外で変換対象 奇数は[]括弧内で無変換
