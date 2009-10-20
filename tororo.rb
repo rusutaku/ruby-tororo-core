@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version
   def initialize
-    @version = "0.1.0"
+    @version = "0.1.2"
     @log_path_in = ""
     @log_lines = []
     @count = 0 # すでに変換した行数
