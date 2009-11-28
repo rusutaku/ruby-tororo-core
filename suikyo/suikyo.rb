@@ -169,6 +169,7 @@ class TororoSuikyo < Suikyo
     orig_table = table
     conversion = ""
     head_bordered = true
+    tail_bordered = false
     head = ""
 
     loop {
@@ -178,6 +179,7 @@ class TororoSuikyo < Suikyo
       table   = orig_table
       node    = nil
       last_node = nil # 最有力候補
+      result  = ""
       candidate = []
 
       while table and chars.length > 0 do
@@ -208,25 +210,29 @@ class TororoSuikyo < Suikyo
         pending = ""
         if node.result or last_node.result then
           # strict: 語の途中で変換しない
-          # i.e. hobbit -> ホビット: hobbiton -> ホビットon
+          # i.e. (辞書)hobbit -> ホビット: (本文)hobbiton -> ホビットon
           #      のように変換対象の前後ともに区切り文字で分かれていない場合．
           if strict then
             if chars.length > 0 then
               tail_bordered = punctuation?(candidate[0])
-            # 変換対象が空の場合は後ろが区切られている
             else
-              tail_bordered = true
+              # 変換対象文字列の一番後ろでぴったり変換できる場合
+              # は後ろが区切られているのは確定
+              tail_bordered = true if node.result
             end
             # 前後を区切られている？
             if head_bordered and tail_bordered then
               conversion += converted_result(result, quote_str, quote)
               # 変換してない文字を書き戻す
-              chars = candidate if last_node and last_node.result
+              chars = candidate if last_node.result
             else
+              # 区切られてなかったら変換しない
               conversion += orig_str
             end
           else
             conversion += converted_result(result, quote_str, quote)
+            # 変換してない文字を書き戻す
+            chars = candidate if last_node.result
           end
         end
         if node.cont or last_node.cont then
@@ -251,7 +257,6 @@ class TororoSuikyo < Suikyo
         head_bordered = false
       end
     }
-
   end
 
   def converted_result(result_string, original_string, quote)

@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version
   def initialize
-    @version = "0.1.2"
+    @version = "0.1.3"
     @log_path_in = ""
     @log_lines = []
     @count = 0 # すでに変換した行数
@@ -49,6 +49,19 @@ class Tororo
     return target
   end
 
+  def read_log_all
+    open(@log_path_in, "r") {|f|
+      @log_lines = f.readlines
+      @log_mtime = f.mtime
+    }
+  end
+  
+  def log_changed?
+    open(@log_path_in, "r") {|f|
+      return (f.mtime > @log_mtime)
+    }
+  end
+  
   def conv_from_log(filepath)
     @log_path_in = filepath
     @count = 0
@@ -73,6 +86,13 @@ class Tororo
       @count += 1
     }
     return str
+  end
+
+  def conv_to_file(str, filename)
+    str = conv(str)
+    open(filename, "w") {|f|
+      f.write(str)
+    }
   end
 
   def conv(str)
@@ -162,19 +182,6 @@ class Tororo
     array = str.split(" ")
     return array
   end
-
-  def read_log_all
-    open(@log_path_in, "r") {|f|
-      @log_lines = f.readlines
-      @log_mtime = f.mtime
-    }
-  end
-  
-  def log_changed?
-    open(@log_path_in, "r") {|f|
-      return (f.mtime > @log_mtime)
-    }
-  end
 end
 
 # キャラクタ同定
@@ -195,7 +202,7 @@ class CharacterID
   end
 
   def get_input_type(chara_name)
-    return @table.get_param(chara_name)
+    return @table.get_value(chara_name)
   end
 end
 
@@ -229,17 +236,17 @@ class SimpleTable
     open(filepath, "r").readlines.each {|line|
       line.chomp!
       unless line =~ /^\#|^\s*$/ then
-        key, param = line.sub(/^ /, "").split(/\t/)
+        key, value = line.sub(/^ /, "").split(/\t/)
          # キーのみ（タブ文字以降のデータなし）の場合は存在だけを知らせる
-        param = true unless param
-        set(key, param)
+        value = true unless value
+        set(key, value)
       end
     }
     return true
   end
 
-  def set(key, param)
-    @word[key] = param
+  def set(key, value)
+    @word[key] = value
   end
 
   def unset(key)
@@ -250,17 +257,17 @@ class SimpleTable
     return @word.include?(key)
   end
 
-  def get_param(key)
+  def get_value(key)
     return @word[key]
   end
 end
 
 # 大文字小文字を区別しないテーブル
-# パラメータが case_sensitive_param の場合は区別
+# 引数が case_sensitive_value の場合は区別
 class IgnoreCasingTable < SimpleTable
-  def initialize(case_sensitive_param = nil)
+  def initialize(case_sensitive_value = nil)
     @word = Hash.new
-    @case_sensitive_param = case_sensitive_param
+    @case_sensitive_value = case_sensitive_value
     @list_files = []
   end
 
@@ -275,12 +282,12 @@ class IgnoreCasingTable < SimpleTable
     open(filepath, "r").readlines.each {|line|
       line.chomp!
       unless line =~ /^\#|^\s*$/ then
-        key, param = line.sub(/^ /, "").split(/\t/)
+        key, value = line.sub(/^ /, "").split(/\t/)
         # キーのみ（タブ文字以降のデータなし）の場合は存在だけを知らせる
-        param = true unless param
+        value = true unless value
         # 大文字小文字の区別なしの単語は小文字のキーにする
-        key.downcase! unless @case_sensitive_param == param
-        set(key, param)
+        key.downcase! unless @case_sensitive_value == value
+        set(key, value)
       end
     }
     return true
@@ -292,7 +299,7 @@ class IgnoreCasingTable < SimpleTable
     if @word.include?(key) then
       return true
     elsif @word.include?(key.downcase) and \
-          @word[key.downcase] != @case_sensitive_param then
+          @word[key.downcase] != @case_sensitive_value then
       return true
     else
       return false
