@@ -279,6 +279,20 @@ class TororoSuikyo < Suikyo
 
 end
 
+# 改行対応
+class TororoSuikyoMore < TororoSuikyo
+  def initialize (table = nil)
+    if table.kind_of?(String) then
+      @table = SuikyoTable2More.new()
+      @table.loadfile(table)
+    elsif table then
+      @table = table
+    else
+      @table = SuikyoTable2More.new
+    end
+  end
+end
+
 class SuikyoTable
   attr_reader :table_files
 
@@ -484,3 +498,55 @@ class SuikyoTable2 < SuikyoTable
   end
 end
 
+# 改行対応
+# 一行目を改行用文字列として，データ内の改行用文字列を改行コードに置き換える
+class SuikyoTable2More < SuikyoTable2
+  def loadfile (filename, tablepath = nil)
+    filepath = SuikyoTable::loadpath(filename, tablepath)
+    if FileTest::exist?(filepath) then
+      @table_files.push(filepath)
+    else
+      $stderr.puts "Suikyo.rb: conv-table '#{filepath}' is not found."
+      return false
+    end
+
+    comment_flag = false
+
+    lines = open(filepath, "r").readlines
+
+    # 改行のおまじないを読んでみる
+    newline_string = ""
+    magic_line = lines[0]
+    unless magic_line =~ /\t/ then
+      magic_line.chomp!
+      unless magic_line =~ /^\#|^\s*$/ then
+        newline_string = magic_line
+        lines.slice!(0)
+      end
+    end
+
+    lines.each{|line|
+      line.chomp!
+      ## The function 'toeuc' converts half-width Katakana to full-width.
+      #      line = line.toeuc.chomp
+      if line =~ /^\/\*/ then
+        comment_flag = true
+      end
+      unless line =~ /^\#|^\s*$/ or comment_flag then
+        (string, result, cont) = line.sub(/^ /, "").split(/\t/)
+        if result.nil? then
+          self.unset(string)
+        else
+          if newline_string.length > 0 then
+            result.gsub!(newline_string, "\r\n")
+          end
+          self.set(string, result, cont)
+        end
+      end
+      if line =~ /\*\// then
+        comment_flag = false
+      end
+    }
+    return true
+  end
+end

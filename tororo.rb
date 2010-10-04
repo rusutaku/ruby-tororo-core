@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version
   def initialize
-    @version = "0.1.3"
+    @version = "0.2.0"
     @log_path_in = ""
     @log_lines = []
     @count = 0 # すでに変換した行数
@@ -31,7 +31,7 @@ class Tororo
     }
     @charas       = build_table(CharacterID,  config["character_id_tables"])
     @line_allower = build_table(LineAllower,  config["line_whitelist_tables"])
-    @foreign_lang = build_table(TororoSuikyo, config["foreign_lang_dics"])
+    @foreign_lang = build_table(TororoSuikyoMore, config["foreign_lang_dics"])
     @nippon       = build_table(TororoSuikyo, config["hiragana_to_kanjikana_dics"])
     @word_denier  = build_table(WordDenier,  config["word_blacklist_tables"])
     @charas.output_file = config["character_id_table_output"]
@@ -97,7 +97,7 @@ class Tororo
 
   def conv(str)
     # ASCII-8bit 以外の文字があったらそのまま返す
-    # ここは Ruby 1.9 だとエラーになる /[^\u0000-\x00FF]/ だといい？
+    # ここは Ruby 1.9 だとエラーになる /[^\u0000-\u00FF]/ だといい？
     return str if /[^\x00-\xFF]/ =~ str
     # フィルターで許可されていれば変換
     if @line_allower.apply_filter(str) then
@@ -179,7 +179,7 @@ class Tororo
   end
 
   def divide_by_blank(str)
-    array = str.split(" ")
+    array = str.split(/ /)
     return array
   end
 end
