@@ -6,12 +6,14 @@ require 'yaml'
 require 'suikyo/suikyo'
 
 class Tororo
-  attr_reader :version
+  attr_reader :version, :count
   def initialize
     @version = "0.2.0"
     @log_path_in = ""
     @log_lines = []
-    @count = 0 # すでに変換した行数
+    @log_attributes_each_line = Hash.new
+    @log_charaname_offsets_each_line = Hash.new
+    @count = 0 # すでに読んだ行数
     @log_mtime = 0
     load_config
   end
@@ -65,6 +67,7 @@ class Tororo
   def conv_from_log(filepath)
     @log_path_in = filepath
     @count = 0
+    @log_attributes_each_line = {}
     read_log_all
     str = ""
     @log_lines.each {|line|
@@ -95,14 +98,17 @@ class Tororo
     }
   end
 
+  # 1行分解析＆変換
   def conv(str)
     # ASCII-8bit 以外の文字があったらそのまま返す
     # ここは Ruby 1.9 だとエラーになる /[^\u0000-\u00FF]/ だといい？
     return str if /[^\x00-\xFF]/ =~ str
     # フィルターで許可されていれば変換
     if @line_allower.apply_filter(str) then
+      @log_attributes_each_line[@count] = @line_allower.attribute
       # フィルター結果からキャラクター名を取得
       if chara_name = @line_allower.get_character_name then
+        @log_charaname_offsets_each_line[@count] = @line_allower.get_character_name_offset
         # キャラクター名から入力方式を取得
         # キャラクター ID テーブルに存在しなかったら規定値の入力方式にする
         unless type = @charas.get_input_type(chara_name) then
@@ -181,6 +187,22 @@ class Tororo
   def divide_by_blank(str)
     array = str.split(/ /)
     return array
+  end
+
+  def get_line_attribute(line_num)
+    return @log_attributes_each_line[line_num]
+  end
+
+  def get_filters(attribute)
+    return @line_allower.get_filters(attribute)
+  end
+
+  def get_all_attributes
+    return @line_allower.get_all_attributes.uniq
+  end
+
+  def get_attributes_hashtable
+    return @line_allower.get_attributes_hashtable
   end
 end
 
@@ -307,16 +329,21 @@ class IgnoreCasingTable < SimpleTable
   end
 end
 
-# 行ごとの変換許可（正規表現）
+# 行ごとの変換許可判定（正規表現）
 class LineAllower
-  attr_reader :table
+  attr_reader :table, :attribute
   def initialize
     @table = FilterTable.new
     @match_data = MatchData
+    @attribute = ""
+    @attributes_ht = {}
   end
 
+  # 変換対象かどうかの判定
   def apply_filter(str)
-    @match_data = @table.try_match(str)
+    @match_data, @attribute = @table.try_match(str)
+    #p @match_data.to_s, @attribute
+    return @match_data
   end
 
   # 1番目にマッチした部分文字列はキャラクタ名
@@ -324,61 +351,85 @@ class LineAllower
     return nil unless @match_data
     return @match_data[1]
   end
+  # キャラクタ名の先頭と末尾の位置を示す配列を返す
+  def get_character_name_offset
+    return nil unless @match_data
+    return @match_data.offset(1)
+  end
   # 変換対象文字列の開始位置を取得
   # とりあえずマッチした文字列の終端を開始位置とする
   def get_convert_start_position
     return nil unless @match_data
     return @match_data.end(0)
   end
+
+  def create_attributes_hashtable
+    attrs = get_all_attributes
+    attrs.each {|attr|
+      @attributes_ht[attr] = get_filters(attr)
+    }
+  end
+
+  def get_attributes_hashtable
+    create_attributes_hashtable if @attributes_ht == {}
+    return @attributes_ht
+  end
+
+  def get_filters(attr)
+    return @table.get_filter_array(attr)
+  end
+
+  def get_all_attributes
+    return @table.get_all_attributes
+  end
+
 end
 
 # 正規表現のフィルターテーブル
-class FilterTable
+class FilterTable < SimpleTable
   attr_reader :table_files
   def initialize
-    @word = []
-    @table_files = []
+    @word = Hash.new
+    @raw  = Hash.new
+    @list_files = []
   end
   
-  def set(str)
-    if /^\/(.*)\/$/ =~ str then
-      @word.push(Regexp.new($1))
+  def set(str, attr)
+    if /^\/(.*)\/(i)?$/ =~ str then
+      option = nil
+      option = Regexp::IGNORECASE if $2
+      @word[Regexp.new($1, option)] = attr
+      @raw[str] = attr
     end
   end
 
   def unset(str)
-    if  /^\/(.*)\/$/ =~ str then
+    if  /^\/(.*)\/i?$/ =~ str then
       @word.delete(Regexp.new($1))
+      @raw.delete(str)
     end
   end
-  
-  def loadfile (filename, tablepath = nil)
-    filepath = File::join2(tablepath, filename)
-    if FileTest::exist?(filepath) then
-      @table_files.push(filepath)
-    else
-      $stderr.puts "tororo.rb: FilterTable '#{filepath}' is not found."
-      return false
-    end
-    open(filepath, "r").readlines.each{|line|
-      line.chomp!
-      unless line =~ /^\#|^\s*$/ then
-        set(line)
-      end
-    }
-    return true
-  end
-  
+
   def try_match(str)
-    allword.each {|regexp|
-      if regexp =~ str then
-        return Regexp.last_match
+    @word.each {|pattern, attribute|
+      if pattern =~ str then
+        return Regexp.last_match, attribute
       end
     }
     return nil
   end
 
-  def allword
-    return @word
+  def get_all_attributes
+    return @word.values
+  end
+
+  def get_filter_array(str)
+    array = []
+    @raw.each {|raw_pattern, attribute|
+      if attribute == str then
+        array.push(raw_pattern)
+      end
+    }
+    return array
   end
 end

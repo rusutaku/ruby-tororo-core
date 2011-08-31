@@ -24,7 +24,6 @@ line_whitelist_tables:
 # 外国語変換辞書リスト
 foreign_lang_dics:
   - ./dic/foreign
-  - ./dic/skills
 
 # 外国語変換時に原語を括弧書きで付け足す？ 省略時は false
 quote_foreign_lang: false

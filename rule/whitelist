@@ -1,11 +1,16 @@
-# whitelist: for LotRO chat
-/^\[To Fellowship\] /
-/^\[Fellowship\] (.+?): /
-/^\[To Kinship\] /
-/^\[Kinship\] (.+?): /
-/^\[To [Jj][Pp]\] /
-/^\[[Jj][Pp]\] (.+?): /
-/^\[To Raid\] /
-/^\[Raid\] (.+?): /
-/^You tell (.+?), /
-/^(.+?) tells you, /
+# whitelist v2: for LotRO chat
+/^\[To Fellowship\] /	FS
+/^\[Fellowship\] (.+?): /	FS
+/^\[To Kinship\] /	KS
+/^\[Kinship\] (.+?): /	KS
+/^\[To JP\] /i	JP
+/^\[JP\] (.+?): /i	JP
+/^\[To Raid\] /	RAID
+/^\[Raid\] (.+?): /	RAID
+/^You tell (.+?), /	TELL
+/^(.+?) tells you, /	TELL
+/^A Beer-fight is about to begin in Thorin's Ale-hall!/	EVENT
+/^\[To Tribe\] /	TRIBE
+/^\[Tribe\] (.+?): /	TRIBE
+/^\[To Group\] /	GROUP
+/^\[Group\] (.+?): /	GROUP
