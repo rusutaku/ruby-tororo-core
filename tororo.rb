@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version, :count
   def initialize
-    @version = "0.2.0"
+    @version = "0.2.1"
     @log_path_in = ""
     @log_lines = []
     @log_attributes_each_line = Hash.new
@@ -189,10 +189,6 @@ class Tororo
     return array
   end
 
-  def get_line_attribute(line_num)
-    return @log_attributes_each_line[line_num]
-  end
-
   def get_filters(attribute)
     return @line_allower.get_filters(attribute)
   end
@@ -203,6 +199,14 @@ class Tororo
 
   def get_attributes_hashtable
     return @line_allower.get_attributes_hashtable
+  end
+
+  def get_log_attributes_each_line(num)
+    return @log_attributes_each_line[num]
+  end
+
+  def get_log_charaname_offsets_each_line(num)
+    return @log_charaname_offsets_each_line[num]
   end
 end
 
@@ -376,7 +380,7 @@ class LineAllower
   end
 
   def get_filters(attr)
-    return @table.get_filter_array(attr)
+    return @table.get_filters(attr)
   end
 
   def get_all_attributes
@@ -423,7 +427,7 @@ class FilterTable < SimpleTable
     return @word.values
   end
 
-  def get_filter_array(str)
+  def get_filters(str)
     array = []
     @raw.each {|raw_pattern, attribute|
       if attribute == str then
