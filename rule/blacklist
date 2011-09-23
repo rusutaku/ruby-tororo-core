@@ -1,0 +1,2 @@
+# blacklist: for LotRO chat
+/^A Beer-fight is about to begin in Thorin's Ale-hall!$/	EVENT

@@ -68,6 +68,7 @@ class Tororo
     @log_path_in = filepath
     @count = 0
     @log_attributes_each_line = {}
+    @log_charaname_offsets_each_line = {}
     read_log_all
     str = ""
     @log_lines.each {|line|

@@ -1,4 +1,4 @@
-# whitelist v2: for LotRO chat
+# whitelist: for LotRO chat
 /^\[To Fellowship\] /	FS
 /^\[Fellowship\] (.+?): /	FS
 /^\[To Kinship\] /	KS
@@ -9,7 +9,6 @@
 /^\[Raid\] (.+?): /	RAID
 /^You tell (.+?), /	TELL
 /^(.+?) tells you, /	TELL
-/^A Beer-fight is about to begin in Thorin's Ale-hall!/	EVENT
 /^\[To Tribe\] /	TRIBE
 /^\[Tribe\] (.+?): /	TRIBE
 /^\[To Group\] /	GROUP

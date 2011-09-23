@@ -17,7 +17,7 @@ character_id_table_output: ./rule/characters
 character_id_tables:
   - ./rule/characters
 
-# 行ごとのホワイトリストテーブルリスト（ややこしい）
+# 行ホワイトリスト（変換対象行の定義）
 line_whitelist_tables:
   - ./rule/whitelist
 
