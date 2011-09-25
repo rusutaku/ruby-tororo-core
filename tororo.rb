@@ -140,13 +140,20 @@ class Tororo
             # 頭文字が大文字を変換しない設定で，さらに頭文字が大文字でないか？
             unless @ignore_capped and is_capped?(word) then
               unless @word_denier.deny?(word.chop) then # 変換拒否単語でないか？
-                # 区切り文字で区切って日本語判定
-                divide_by_punc(word.chop).each {|subword|
-                  subword += " "
-                  if @input_tables[type].valid?(subword) then
-                    str += @nippon.convert(@input_tables[type].convert(subword))
-                  else str += subword end
-                }
+                if @input_tables[type].valid?(word) then
+                  str += @nippon.convert(@input_tables[type].convert(word))
+                else
+                  # 区切り文字のせいで日本語と判定されなかった可能性があるので，
+                  # 区切り文字で分断して再判定
+                  # （最初から分断してから判定しないのは，特殊な入力方式への配慮
+                  # 　しかし不完全だとおもうが…）
+                  divide_by_punc(word.chop).each {|subword|
+                    subword += " "
+                    if @input_tables[type].valid?(subword) then
+                      str += @nippon.convert(@input_tables[type].convert(subword))
+                    else str += subword end
+                  }
+                end
               else str += word end
             else str += word end
           }
