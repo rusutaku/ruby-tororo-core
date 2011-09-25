@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version, :count
   def initialize
-    @version = "0.2.2"
+    @version = "0.2.3"
     @log_path_in = ""
     @log_lines = []
     @log_attributes_each_line = Hash.new
@@ -140,9 +140,13 @@ class Tororo
             # 頭文字が大文字を変換しない設定で，さらに頭文字が大文字でないか？
             unless @ignore_capped and is_capped?(word) then
               unless @word_denier.deny?(word.chop) then # 変換拒否単語でないか？
-                if @input_tables[type].valid?(word) then
-                  str += @nippon.convert(@input_tables[type].convert(word))
-                else str += word end
+                # 区切り文字で区切って日本語判定
+                divide_by_punc(word.chop).each {|subword|
+                  subword += " "
+                  if @input_tables[type].valid?(subword) then
+                    str += @nippon.convert(@input_tables[type].convert(subword))
+                  else str += subword end
+                }
               else str += word end
             else str += word end
           }
@@ -192,6 +196,10 @@ class Tororo
   
   def divide_by_blank(str)
     return str.split(" ")
+  end
+  
+  def divide_by_punc(str)
+    return str.split(/\b+/)
   end
   
   def get_filters(attribute)
