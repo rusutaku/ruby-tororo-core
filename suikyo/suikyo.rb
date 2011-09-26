@@ -270,11 +270,7 @@ class TororoSuikyo < Suikyo
   # 区切り文字の判定
   def punctuation?(char)
     return true if char == ""
-    if punctuation_marks =~ char then
-      return true
-    else
-      return false
-    end
+    return punctuation_marks =~ char
   end
 
 end

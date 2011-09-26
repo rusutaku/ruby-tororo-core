@@ -28,6 +28,9 @@ foreign_lang_dics:
 # 外国語変換時に原語を括弧書きで付け足す？ 省略時は false
 quote_foreign_lang: false
 
+# 頭文字が大文字の単語は変換しない 省略時は true
+ignore_capitalized_words: true
+
 # 区切り文字
 punctuation_marks: !ruby/regexp /[ !\"\#$%&\'()*+,-.\/:;<=>?@\[\\\]^_`{|}~]/
 

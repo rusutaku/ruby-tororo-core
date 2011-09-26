@@ -8,7 +8,7 @@ require 'suikyo/suikyo'
 class Tororo
   attr_reader :version, :count
   def initialize
-    @version = "0.2.1"
+    @version = "0.2.2"
     @log_path_in = ""
     @log_lines = []
     @log_attributes_each_line = Hash.new
@@ -37,7 +37,8 @@ class Tororo
     @nippon       = build_table(TororoSuikyo, config["hiragana_to_kanjikana_dics"])
     @word_denier  = build_table(WordDenier,  config["word_blacklist_tables"])
     @charas.output_file = config["character_id_table_output"]
-    @quote_foreign_lang = config["quote_foreign_lang"] ? true : false
+    @quote_foreign_lang = false if config["quote_foreign_lang"] != true
+    @ignore_capped = true if config["ignore_capitalized_words"] != false
     @foreign_lang.punctuation_marks = config["punctuation_marks"]
   end
 
@@ -135,16 +136,15 @@ class Tororo
         if i % 2  == 0 then
           # スペースで区切って変換させる
           divide_by_blank(words).each {|word|
-            word += " "
-            unless @word_denier.deny?(word.chop) then # 変換拒否単語か？
-              if @input_tables[type].valid?(word) then
-                str += @nippon.convert(@input_tables[type].convert(word))
-              else
-                str += word
-              end
-            else
-              str += word
-            end
+            word += " " # スペースで単語の終わりを表す
+            # 頭文字が大文字を変換しない設定で，さらに頭文字が大文字でないか？
+            unless @ignore_capped and is_capped?(word) then
+              unless @word_denier.deny?(word.chop) then # 変換拒否単語でないか？
+                if @input_tables[type].valid?(word) then
+                  str += @nippon.convert(@input_tables[type].convert(word))
+                else str += word end
+              else str += word end
+            else str += word end
           }
         # 無変換部分（[]内）
         else
@@ -157,6 +157,11 @@ class Tororo
       str.chop!
     end
     return str
+  end
+
+  # 頭文字が大文字か？
+  def is_capped?(str)
+    return /^[A-Z]/ =~ str
   end
 
   # 括弧外文字列と括弧内文字列で分割した配列を返す
@@ -184,12 +189,11 @@ class Tororo
     end
     return str_array
   end
-
+  
   def divide_by_blank(str)
-    array = str.split(/ /)
-    return array
+    return str.split(" ")
   end
-
+  
   def get_filters(attribute)
     return @line_allower.get_filters(attribute)
   end
